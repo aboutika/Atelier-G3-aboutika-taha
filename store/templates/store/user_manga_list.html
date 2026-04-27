@@ -1,0 +1,156 @@
+{% extends 'store/base.html' %}
+{% block title %}Mangas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+    <h1 class="h2">Mangas</h1>
+    <div class="d-flex align-items-center">
+        <form action="" method="get" class="form-inline">
+            <div class="input-group" style="min-width: 400px;">
+                <input type="text" name="search" class="form-control" placeholder="Rechercher..." style="border-radius: 20px 0 0 20px;">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="submit" style="border-radius: 0 20px 20px 0;"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if recently_viewed %}
+<div class="mb-5">
+    <h4><i class="fas fa-history mr-2"></i> Récemment consultés</h4>
+    <div class="row">
+        {% for manga in recently_viewed %}
+        <div class="col-md-2 mb-3">
+            <div class="card h-100 shadow-sm">
+                {% if manga.image %}
+                    <img src="{{ manga.image.url }}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="{{ manga.title }}">
+                {% elif manga.image_url %}
+                    <img src="{{ manga.image_url }}" class="card-img-top" style="height: 150px; object-fit: cover;" alt="{{ manga.title }}">
+                {% endif %}
+                <div class="card-body p-2 text-center">
+                    <h6 class="card-title mb-0"><a href="{% url 'manga_detail' manga.id %}" class="text-dark small">{{ manga.title }}</a></h6>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<hr>
+{% endif %}
+
+<form id="compare-form" action="{% url 'compare_mangas' %}" method="get">
+<div class="row">
+    {% for manga in mangas %}
+    <div class="col-md-4 mb-4">
+        <div class="card manga-card h-100">
+            <div class="position-relative">
+                {% if manga.image %}
+                    <img src="{{ manga.image.url }}" class="card-img-top" alt="{{ manga.title }}">
+                {% elif manga.image_url %}
+                    <img src="{{ manga.image_url }}" class="card-img-top" alt="{{ manga.title }}">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 300px;">
+                        <i class="fas fa-book fa-5x text-muted"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="position-absolute" style="top: 10px; right: 10px;">
+                    {% if manga.stock > 0 %}
+                        <span class="badge badge-available p-2">Disponible</span>
+                    {% else %}
+                        <span class="badge badge-out p-2">Rupture de stock</span>
+                    {% endif %}
+                </div>
+                
+                {% if manga.is_popular %}
+                <div class="position-absolute" style="top: 40px; left: 10px;">
+                    <span class="badge badge-warning p-2"><i class="fas fa-chart-line"></i> Populaire</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold"><a href="{% url 'manga_detail' manga.id %}" class="text-theme-color">{{ manga.title }}</a></h5>
+                <div class="text-muted small mb-2">
+                    <i class="fas fa-user mr-1"></i> {{ manga.author.name }}<br>
+                    <i class="fas fa-tag mr-1"></i> {{ manga.category.name }}
+                </div>
+                <div class="h4 text-primary font-weight-bold mb-3">Prix: {{ manga.price }} €</div>
+                <div class="small text-info mb-3"><i class="fas fa-hand-holding-usd mr-1"></i> Caution location: {{ manga.rental_deposit }} €</div>
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <a href="{% url 'order_manga' manga.id %}" class="btn btn-primary btn-sm flex-fill mr-1 {% if manga.stock <= 0 %}disabled{% endif %}">
+                        <i class="fas fa-shopping-cart mr-1"></i> Acheter
+                    </a>
+                    <a href="{% url 'rent_manga' manga.id %}" class="btn btn-outline-info btn-sm flex-fill ml-1 {% if manga.stock <= 0 or not user.can_rent %}disabled{% endif %}" 
+                       {% if not user.can_rent %}title="Vous avez atteint la limite de fautes ou votre compte est suspendu"{% endif %}>
+                        <i class="fas fa-clock mr-1"></i> Louer
+                    </a>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'manga_detail' manga.id %}" class="btn btn-info btn-sm" title="Voir détails"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'add_to_favorites' manga.id %}" class="btn btn-outline-danger btn-sm" title="Ajouter aux favoris"><i class="fas fa-heart"></i></a>
+                    <div class="d-inline-block compare-btn-wrapper">
+                        <input type="checkbox" name="mangas" value="{{ manga.id }}" id="compare-{{ manga.id }}" class="d-none compare-checkbox">
+                        <label class="btn btn-outline-warning btn-sm mb-0 compare-label" for="compare-{{ manga.id }}" title="Comparer"><i class="fas fa-balance-scale"></i></label>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" title="Partager"><i class="fas fa-share-alt"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+        <h4>Aucun manga trouvé</h4>
+        <p>Revenez plus tard ou essayez une autre recherche.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if mangas %}
+<div class="fixed-bottom p-3 text-right" style="pointer-events: none;">
+    <button type="submit" class="btn btn-warning shadow-lg font-weight-bold px-4" style="pointer-events: auto;">
+        <i class="fas fa-balance-scale mr-2"></i> Comparer la sélection
+    </button>
+</div>
+{% endif %}
+</form>
+
+<style>
+    .manga-card {
+        border: 0;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .manga-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    .text-theme-color {
+        color: var(--text-color);
+        transition: color 0.3s;
+    }
+    .text-theme-color:hover {
+        color: #007bff;
+        text-decoration: none;
+    }
+    .badge-available { background-color: #28a745; color: white; }
+    .badge-out { background-color: #dc3545; color: white; }
+    .btn-sm { padding: 0.4rem 0.6rem; }
+    .shadow-lg { box-shadow: 0 1rem 3rem rgba(0,0,0,0.175) !important; }
+    
+    /* Compare Button Styling */
+    .compare-checkbox:checked + .compare-label {
+        background-color: var(--accent-color, #007bff);
+        border-color: var(--accent-color, #007bff);
+        color: white;
+        transform: scale(1.05);
+    }
+    .compare-label {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
+{% endblock %}

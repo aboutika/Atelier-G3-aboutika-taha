@@ -1,0 +1,423 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KuroShelf - {% block title %}Manga Shop{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ffffff;
+            --navbar-bg: #1a1a1a;
+            --border-color: #e9ecef;
+            --accent-color: #007bff;
+        }
+        [data-theme="dark"] {
+            --bg-color: #0f111a;
+            --text-color: #e0e6ed;
+            --card-bg: #1a1d27;
+            --sidebar-bg: #10121b;
+            --sidebar-text: #e0e6ed;
+            --navbar-bg: #050608;
+            --border-color: #2d323e;
+            --accent-color: #3d9af2;
+            --list-group-bg: #1a1d27;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-x: hidden;
+        }
+        #wrapper {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+        }
+        #sidebar-wrapper {
+            width: 260px;
+            flex-shrink: 0;
+            background-color: var(--sidebar-bg);
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            transition: background-color 0.3s;
+            color: var(--sidebar-text);
+        }
+        #sidebar-wrapper .sidebar-heading {
+            padding: 1.5rem 1.25rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--sidebar-text);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #sidebar-wrapper .list-group-item {
+            background-color: transparent;
+            color: rgba(255,255,255,0.7);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s;
+        }
+        #sidebar-wrapper .list-group-item:hover {
+            color: #fff;
+            background-color: rgba(255,255,255,0.1);
+            padding-left: 1.75rem;
+        }
+        #sidebar-wrapper .list-group-item.active {
+            background-color: var(--accent-color);
+            color: #fff;
+            border-radius: 0 25px 25px 0;
+            margin-right: 15px;
+        }
+        [data-theme="dark"] #sidebar-wrapper .list-group-item {
+            color: rgba(224, 230, 237, 0.6);
+        }
+        [data-theme="dark"] #sidebar-wrapper .list-group-item:hover {
+            color: #fff;
+            background-color: rgba(255,255,255,0.05);
+        }
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #page-content-wrapper {
+            flex-grow: 1;
+            width: 100%;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--bg-color);
+        }
+        #page-content-wrapper > .container-fluid {
+            width: 100%;
+            max-width: 1400px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
+            color: var(--text-color);
+        }
+        .card-title, .h1, .h2, .h3, .h4, .h5, .h6 {
+            color: var(--text-color);
+        }
+        .list-group-item {
+            background-color: transparent;
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        [data-theme="dark"] .list-group-item {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        [data-theme="dark"] .text-muted {
+            color: #8a94a6 !important;
+        }
+        [data-theme="dark"] .text-dark {
+            color: var(--text-color) !important;
+        }
+        [data-theme="dark"] .bg-light {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        [data-theme="dark"] .alert-warning {
+            background-color: rgba(255, 193, 7, 0.15);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+        [data-theme="dark"] .table {
+            color: var(--text-color);
+        }
+        [data-theme="dark"] .thead-light th {
+            background-color: var(--sidebar-bg) !important;
+            color: var(--text-color) !important;
+            border-color: var(--border-color) !important;
+        }
+        [data-theme="dark"] .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #fff !important;
+        }
+        [data-theme="dark"] .table-hover tbody tr:hover td {
+            color: #fff !important;
+        }
+        [data-theme="dark"] .form-control {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        [data-theme="dark"] .form-control:focus {
+            background-color: var(--card-bg);
+            border-color: var(--accent-color);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.2rem rgba(61, 154, 242, 0.25);
+        }
+        [data-theme="dark"] label {
+            color: var(--text-color);
+        }
+        [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+        [data-theme="dark"] .table-secondary, [data-theme="dark"] .table-secondary > td, [data-theme="dark"] .table-secondary > th {
+            background-color: rgba(108, 117, 125, 0.1) !important;
+            color: var(--text-color) !important;
+        }
+        .custom-select-lang {
+            border-radius: 20px;
+            padding: 0 15px;
+            height: 30px;
+            cursor: pointer;
+            background-color: rgba(255,255,255,0.1) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+        }
+        [data-theme="dark"] .custom-select-lang {
+            background-color: var(--card-bg) !important;
+            border-color: var(--border-color) !important;
+        }
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 8px 20px;
+            transition: all 0.2s;
+        }
+        .btn-primary { background-color: var(--accent-color); border: none; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,123,255,0.3); }
+        .table {
+            color: var(--text-color);
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        .stats-card {
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .bg-blue { background-color: #007bff; }
+        .bg-green { background-color: #28a745; }
+        .bg-yellow { background-color: #ffc107; color: black; }
+        .bg-cyan { background-color: #17a2b8; }
+        .bg-gray { background-color: #6c757d; }
+        .bg-red { background-color: #dc3545; }
+        .bg-dark-gray { background-color: #343a40; }
+        
+        .manga-card img {
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px 10px 0 0;
+        }
+        .badge-available { background-color: #28a745; color: white; }
+        .badge-out { background-color: #dc3545; color: white; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">KuroShelf (黒 Shelf)</a>
+        
+        <div class="ml-auto d-flex align-items-center">
+            <!-- Google Translate Language Switcher -->
+            <div class="dropdown mr-3">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle custom-lang-btn" type="button" id="languageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-globe mr-1"></i> <span id="currentLangText">Français</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" aria-labelledby="languageDropdown" style="min-width: 150px; border-radius: 12px; overflow: hidden; background-color: var(--card-bg);">
+                    <a class="dropdown-item py-2 lang-select" href="#" data-lang="fr" style="color: var(--text-color);"><img src="https://flagcdn.com/20x15/fr.png" alt="FR" class="mr-2 rounded-sm"> Français</a>
+                    <a class="dropdown-item py-2 lang-select" href="#" data-lang="en" style="color: var(--text-color);"><img src="https://flagcdn.com/20x15/gb.png" alt="EN" class="mr-2 rounded-sm"> English</a>
+                    <a class="dropdown-item py-2 lang-select" href="#" data-lang="ja" style="color: var(--text-color);"><img src="https://flagcdn.com/20x15/jp.png" alt="JA" class="mr-2 rounded-sm"> 日本語</a>
+                </div>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button id="theme-toggle" class="btn btn-outline-light btn-sm mr-3">
+                <i class="fas fa-moon"></i>
+            </button>
+
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' %}" class="btn btn-outline-light btn-sm mr-2" title="Profil Bancaire">
+                    <i class="fas fa-credit-card"></i>
+                </a>
+                <span class="mr-3 text-white">Bonjour, {{ user.username }}</span>
+                <form action="{% url 'logout' %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Déconnexion</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm mr-2">Connexion</a>
+                <a href="{% url 'signup' %}" class="btn btn-primary btn-sm">S'inscrire</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div id="wrapper">
+        <!-- Sidebar -->
+        {% if user.is_authenticated %}
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">Menu</div>
+            <div class="list-group list-group-flush">
+                {% if user.is_superuser or user.is_subadmin %}
+                    <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt mr-2"></i> Tableau de bord
+                    </a>
+                    <a href="{% url 'user_manga_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-book mr-2"></i> Mangas
+                    </a>
+                    <a href="{% url 'manage_mangas' %}" class="list-group-item list-group-item-action {% if 'mangas' in request.path and 'management' in request.path %}active{% endif %}">
+                        <i class="fas fa-edit mr-2"></i> Gérer Mangas
+                    </a>
+                    {% if user.is_superuser %}
+                    <a href="{% url 'manage_users' %}" class="list-group-item list-group-item-action {% if 'management/users' in request.path %}active{% endif %}">
+                        <i class="fas fa-users mr-2"></i> Utilisateurs
+                    </a>
+                    <a href="{% url 'manage_subadmins' %}" class="list-group-item list-group-item-action {% if 'subadmins' in request.path %}active{% endif %}">
+                        <i class="fas fa-users-cog mr-2"></i> Sous-admins
+                    </a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'user_manga_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'user_manga_list' %}active{% endif %}">
+                        <i class="fas fa-home mr-2"></i> Accueil
+                    </a>
+                    <a href="{% url 'my_rentals' %}" class="list-group-item list-group-item-action {% if 'rentals' in request.path %}active{% endif %}">
+                        <i class="fas fa-hand-holding mr-2"></i> Mes Emprunts
+                    </a>
+                    <a href="{% url 'favorites_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'favorites_list' %}active{% endif %}">
+                        <i class="fas fa-heart mr-2"></i> Favoris
+                    </a>
+                {% endif %}
+            </div>
+            
+            {% if not user.is_superuser and not user.is_subadmin %}
+            <div class="sidebar-heading mt-4">Catégories</div>
+            <div class="list-group list-group-flush">
+                {% for category in categories %}
+                    <a href="{% url 'user_manga_list' %}?category={{ category.id }}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-folder mr-2"></i> {{ category.name }}
+                    </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+        });
+        
+        // Language Switcher Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const match = document.cookie.match(/(?:^|;)\s*googtrans=([^;]*)/);
+            let currentLang = 'fr';
+            if (match && match[1]) {
+                const parts = match[1].split('/');
+                if (parts.length > 2) currentLang = parts[2];
+            }
+            const langNames = {'fr': 'Français', 'en': 'English', 'ja': '日本語'};
+            if (langNames[currentLang]) {
+                document.getElementById('currentLangText').textContent = langNames[currentLang];
+            }
+
+            document.querySelectorAll('.lang-select').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const lang = this.getAttribute('data-lang');
+                    // Google translate cookie format: /auto/lang or /fr/lang
+                    document.cookie = `googtrans=/fr/${lang}; path=/; domain=${window.location.hostname}`;
+                    if(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                        document.cookie = `googtrans=/fr/${lang}; path=/`;
+                    }
+                    window.location.reload();
+                });
+            });
+        });
+    </script>
+    
+    <!-- Google Translate Script -->
+    <div id="google_translate_element" style="display:none;"></div>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'fr', autoDisplay: false}, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <style>
+        /* Hide Google Translate top bar */
+        .skiptranslate iframe { display: none !important; }
+        body { top: 0px !important; }
+        
+        /* Language Dropdown Styling */
+        .custom-lang-btn {
+            border-radius: 20px;
+            padding: 4px 15px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s;
+        }
+        .custom-lang-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .dropdown-item.lang-select:hover {
+            background-color: var(--accent-color);
+            color: white !important;
+        }
+        .goog-te-spinner-pos { display: none !important; }
+    </style>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

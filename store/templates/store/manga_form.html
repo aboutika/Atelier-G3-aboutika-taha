@@ -1,0 +1,144 @@
+{% extends 'store/base.html' %}
+{% load bootstrap4 %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h2 class="mb-4">{{ title }}</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success btn-block">Enregistrer</button>
+                    <a href="{% url 'manage_mangas' %}" class="btn btn-secondary btn-block">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-btn, .delete-btn {
+        cursor: pointer;
+        border-radius: 8px !important;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-width: 2px;
+    }
+    .upload-btn:hover, .delete-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .image-preview-container {
+        margin-top: 15px;
+        background-color: var(--bg-color);
+        padding: 10px;
+        border-radius: 12px;
+        display: inline-block;
+        border: 1px dashed var(--border-color);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const imageInput = document.getElementById("id_image");
+        if (imageInput) {
+            const parent = imageInput.parentNode;
+            
+            // Clean up default Django text nodes like "Actuellement :", "Modification :"
+            Array.from(parent.childNodes).forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    node.textContent = '';
+                }
+            });
+
+            // Find current image link and clear checkbox
+            const currentImgLink = parent.querySelector('a[href*="/media/"]');
+            const clearCheckbox = document.getElementById("image-clear_id");
+            const clearLabel = parent.querySelector('label[for="image-clear_id"]');
+            
+            // Hide default elements completely
+            if (currentImgLink) currentImgLink.style.display = 'none';
+            if (clearCheckbox) clearCheckbox.style.display = 'none';
+            if (clearLabel) clearLabel.style.display = 'none';
+            imageInput.style.display = "none";
+            
+            let initialImgSrc = currentImgLink ? currentImgLink.href : '';
+            
+            // Create our custom UI wrapper
+            const wrapper = document.createElement("div");
+            wrapper.className = "custom-image-uploader mt-3 mb-4";
+            wrapper.innerHTML = `
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <label for="id_image" class="btn btn-outline-primary upload-btn m-0 mr-2">
+                        <i class="fas fa-camera mr-2"></i> Sélectionner une image...
+                    </label>
+                    <button type="button" class="btn btn-outline-danger delete-btn m-0" id="custom-delete-btn" style="display: ${initialImgSrc ? 'block' : 'none'};">
+                        <i class="fas fa-trash-alt mr-2"></i> Supprimer
+                    </button>
+                    <span class="file-name ml-3 text-muted" style="font-style: italic;"></span>
+                </div>
+                <div class="image-preview-container" style="display: ${initialImgSrc ? 'inline-block' : 'none'};">
+                    <img id="image-preview" src="${initialImgSrc}" style="max-width: 250px; max-height: 350px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); object-fit: cover;">
+                </div>
+            `;
+            
+            parent.insertBefore(wrapper, imageInput);
+            
+            const deleteBtn = wrapper.querySelector('#custom-delete-btn');
+            const previewImg = wrapper.querySelector('#image-preview');
+            const previewContainer = wrapper.querySelector('.image-preview-container');
+            const fileNameSpan = wrapper.querySelector('.file-name');
+            const uploadBtn = wrapper.querySelector('.upload-btn');
+            
+            // Handle file selection (preview logic)
+            imageInput.addEventListener("change", function() {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    fileNameSpan.textContent = file.name;
+                    fileNameSpan.className = "file-name ml-3 text-success font-weight-bold";
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewContainer.style.display = 'inline-block';
+                    }
+                    reader.readAsDataURL(file);
+                    
+                    deleteBtn.style.display = 'block';
+                    
+                    uploadBtn.classList.remove("btn-outline-primary");
+                    uploadBtn.classList.add("btn-primary");
+                    uploadBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Image modifiée';
+                    
+                    // Make sure the Django clear checkbox is unchecked if we upload a new file
+                    if (clearCheckbox) clearCheckbox.checked = false;
+                }
+            });
+            
+            // Handle delete button
+            deleteBtn.addEventListener('click', function() {
+                imageInput.value = ''; // clear input
+                if (clearCheckbox) clearCheckbox.checked = true; // tell Django to delete old file
+                
+                previewImg.src = '';
+                previewContainer.style.display = 'none';
+                deleteBtn.style.display = 'none';
+                
+                fileNameSpan.textContent = 'Aucune image (supprimée)';
+                fileNameSpan.className = "file-name ml-3 text-danger font-weight-bold";
+                
+                uploadBtn.classList.add("btn-outline-primary");
+                uploadBtn.classList.remove("btn-primary");
+                uploadBtn.innerHTML = '<i class="fas fa-camera mr-2"></i> Sélectionner une image...';
+            });
+        }
+    });
+</script>
+{% endblock %}

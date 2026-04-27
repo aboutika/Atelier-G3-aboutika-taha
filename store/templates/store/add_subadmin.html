@@ -1,0 +1,21 @@
+{% extends 'store/base.html' %}
+{% load bootstrap4 %}
+{% block title %}Ajouter un sous-admin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h2 class="mb-4">{% if edit %}Modifier le{% else %}Ajouter un{% endif %} sous-admin</h2>
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success btn-block">{% if edit %}Enregistrer les modifications{% else %}Créer le sous-admin{% endif %}</button>
+                    <a href="{% url 'manage_subadmins' %}" class="btn btn-secondary btn-block">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

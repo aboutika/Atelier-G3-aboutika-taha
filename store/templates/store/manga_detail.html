@@ -1,0 +1,65 @@
+{% extends 'store/base.html' %}
+{% block title %}{{ manga.title }}{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ manga.title }}</h1>
+    <a href="{% url 'user_manga_list' %}" class="btn btn-link"><i class="fas fa-arrow-left"></i> Retour au catalogue</a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            {% if manga.image %}
+                <img src="{{ manga.image.url }}" class="img-fluid rounded" alt="{{ manga.title }}">
+            {% elif manga.image_url %}
+                <img src="{{ manga.image_url }}" class="img-fluid rounded" alt="{{ manga.title }}">
+            {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 400px;">
+                    <i class="fas fa-book fa-5x text-muted"></i>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h3>{{ manga.title }}</h3>
+            <p class="text-muted">Par <strong>{{ manga.author.name }}</strong> | Édité par <strong>{{ manga.editor.name }}</strong></p>
+            <hr>
+            <div class="h2 text-primary mb-4">{{ manga.price }} €</div>
+            
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>{{ manga.description|default:"Aucune description disponible." }}</p>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-tag mr-2"></i> Catégorie: {{ manga.category.name }}</li>
+                        <li><i class="fas fa-cubes mr-2"></i> Stock: {{ manga.stock }}</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-eye mr-2"></i> Consultations: {{ manga.consultations }}</li>
+                        <li><i class="fas fa-shopping-basket mr-2"></i> Ventes: {{ manga.sales }}</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="d-flex">
+                <a href="{% url 'order_manga' manga.id %}" class="btn btn-primary btn-lg mr-2 {% if manga.stock <= 0 %}disabled{% endif %}">
+                    <i class="fas fa-shopping-cart mr-2"></i> Acheter
+                </a>
+                <a href="{% url 'rent_manga' manga.id %}" class="btn btn-outline-info btn-lg mr-2 {% if manga.stock <= 0 or not user.can_rent %}disabled{% endif %}">
+                    <i class="fas fa-clock mr-2"></i> Louer (Caution: {{ manga.rental_deposit }} €)
+                </a>
+                <a href="{% url 'add_to_favorites' manga.id %}" class="btn btn-outline-danger btn-lg">
+                    <i class="fas fa-heart mr-2"></i> Ajouter aux favoris
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

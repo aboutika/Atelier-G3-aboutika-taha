@@ -1,0 +1,356 @@
+{% extends 'store/base.html' %}
+{% block title %}Tableau de bord - Administration{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    function getChartColors() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            grid: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+            text: isDark ? '#e0e0e0' : '#212529'
+        };
+    }
+
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    let colors = getChartColors();
+    
+    const salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+            datasets: [{
+                label: 'Ventes hebdomadaires',
+                data: [12, 19, 3, 5, 2, 3, 7],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 3,
+                pointBackgroundColor: '#007bff',
+                pointRadius: 4,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: colors.grid },
+                    ticks: { color: colors.text }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: colors.text }
+                }
+            }
+        }
+    });
+
+    const ctx2 = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for cat in category_sales %}'{{ cat.name }}',{% endfor %}],
+            datasets: [{
+                data: [{% for cat in category_sales %}{{ cat.total_sales }},{% endfor %}],
+                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6c757d'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { color: colors.text }
+                }
+            }
+        }
+    });
+
+    // Update chart when theme changes
+    const observer = new MutationObserver(() => {
+        const newColors = getChartColors();
+        salesChart.options.scales.y.grid.color = newColors.grid;
+        salesChart.options.scales.y.ticks.color = newColors.text;
+        salesChart.options.scales.x.ticks.color = newColors.text;
+        salesChart.update();
+        
+        categoryChart.options.plugins.legend.labels.color = newColors.text;
+        categoryChart.update();
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+    <h1 class="h2 font-weight-bold">Tableau de bord</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Exporter</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Partager</button>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle">
+            <i class="fas fa-calendar-alt mr-1"></i> Cette semaine
+        </button>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="card-title mb-0 font-weight-bold">
+                        <i class="fas fa-chart-line mr-2 text-primary"></i> Tendances des ventes
+                    </h5>
+                    <span class="badge badge-soft-primary px-3 py-2 text-primary bg-light">+12.5% vs semaine dernière</span>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4 font-weight-bold">
+                    <i class="fas fa-chart-pie mr-2 text-info"></i> Ventes par catégorie
+                </h5>
+                <div style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <a href="{% url 'manage_mangas' %}" class="text-decoration-none">
+            <div class="card border-0 bg-primary text-white h-100 shadow-sm overflow-hidden">
+                <div class="card-body p-4 position-relative">
+                    <div class="position-absolute" style="top: -10px; right: -10px; opacity: 0.1;">
+                        <i class="fas fa-book fa-5x"></i>
+                    </div>
+                    <div class="small text-uppercase font-weight-bold mb-1 opacity-75">Total Mangas</div>
+                    <div class="h2 font-weight-bold mb-0">{{ stats.total_mangas }}</div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 bg-success text-white h-100 shadow-sm overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="position-absolute" style="top: -10px; right: -10px; opacity: 0.1;">
+                    <i class="fas fa-shopping-cart fa-5x"></i>
+                </div>
+                <div class="small text-uppercase font-weight-bold mb-1 opacity-75">Commandes</div>
+                <div class="h2 font-weight-bold mb-0">{{ stats.total_orders }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 bg-warning text-dark h-100 shadow-sm overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="position-absolute" style="top: -10px; right: -10px; opacity: 0.1;">
+                    <i class="fas fa-check-circle fa-5x"></i>
+                </div>
+                <div class="small text-uppercase font-weight-bold mb-1 opacity-75 text-dark">Mangas Vendus</div>
+                <div class="h2 font-weight-bold mb-0 text-dark">{{ stats.mangas_sold }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 bg-info text-white h-100 shadow-sm overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="position-absolute" style="top: -10px; right: -10px; opacity: 0.1;">
+                    <i class="fas fa-euro-sign fa-5x"></i>
+                </div>
+                <div class="small text-uppercase font-weight-bold mb-1 opacity-75">Revenu Total</div>
+                <div class="h2 font-weight-bold mb-0">{{ stats.total_revenue }} €</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4 font-weight-bold">
+                    <i class="fas fa-hand-holding-heart mr-2 text-dark"></i> Dernières locations
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr class="text-muted small text-uppercase">
+                                <th>Client</th>
+                                <th>Manga</th>
+                                <th>Échéance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in active_rentals_list %}
+                            <tr>
+                                <td class="font-weight-bold">{{ rental.user.username }}</td>
+                                <td>{{ rental.manga.title }}</td>
+                                <td>
+                                    <span class="badge badge-soft-{% if rental.due_date < now %}danger{% else %}primary{% endif %}">
+                                        {{ rental.due_date|date:"d/m" }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted">Aucune location active.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body p-4">
+                <h5 class="card-title mb-4 font-weight-bold">
+                    <i class="fas fa-trophy mr-2 text-warning"></i> Top ventes mensuelles
+                </h5>
+                <div class="list-group list-group-flush">
+                    {% for manga in top_sales %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                        <div class="d-flex align-items-center">
+                            <span class="mr-3 text-muted">#{{ forloop.counter }}</span>
+                            <div class="font-weight-bold">{{ manga.title }}</div>
+                        </div>
+                        <span class="font-weight-bold text-primary">{{ manga.sales }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 h-100 shadow-sm bg-light">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-shape bg-secondary-soft text-secondary rounded mr-3">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted font-weight-bold">Prix Moyen</div>
+                        <div class="h4 font-weight-bold mb-0">{{ stats.avg_price|floatformat:2 }} €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 h-100 shadow-sm bg-light">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-shape bg-danger-soft text-danger rounded mr-3">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted font-weight-bold">Moyenne Commande</div>
+                        <div class="h4 font-weight-bold mb-0">{{ stats.avg_order|floatformat:2 }} €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <a href="{% url 'manage_users' %}" class="text-decoration-none">
+            <div class="card border-0 h-100 shadow-sm bg-light">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-dark-soft text-dark rounded mr-3">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="small text-muted font-weight-bold">Utilisateurs Actifs</div>
+                            <div class="h4 font-weight-bold mb-0">{{ stats.active_users }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card border-0 h-100 shadow-sm bg-white border">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-shape bg-warning-soft text-danger rounded mr-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div class="small text-muted font-weight-bold">Stock Faible</div>
+                        <div class="h4 font-weight-bold mb-0 text-danger">{{ stats.low_stock }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-5">
+    <div class="card-body p-4">
+        <h5 class="card-title mb-4 font-weight-bold">Top 10 des mangas les plus consultés</h5>
+        <div class="row">
+            {% for manga in top_mangas %}
+            <div class="col-xl-2 col-lg-3 col-md-4 col-6 mb-4">
+                <div class="p-3 border rounded-lg h-100 text-center bg-light hover-shadow transition">
+                    <div class="small font-weight-bold mb-2 text-truncate">{{ manga.title }}</div>
+                    <div class="h4 font-weight-bold text-primary mb-1">{{ manga.consultations }}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Vues</div>
+                    <div class="mt-2 pt-2 border-top">
+                        <span class="text-success small"><i class="fas fa-arrow-up mr-1"></i>{{ manga.sales }} ventes</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4 text-muted">Aucune donnée disponible.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .icon-shape {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    .bg-secondary-soft { background-color: rgba(108, 117, 125, 0.15); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.15); }
+    .bg-dark-soft { background-color: rgba(52, 58, 64, 0.15); }
+    .bg-warning-soft { background-color: rgba(255, 193, 7, 0.15); }
+    .opacity-75 { opacity: 0.75; }
+    .hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); }
+    .transition { transition: all 0.2s ease-in-out; }
+    
+    [data-theme="dark"] .bg-light {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+    [data-theme="dark"] .border {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+</style>
+{% endblock %}

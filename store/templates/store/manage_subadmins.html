@@ -1,0 +1,55 @@
+{% extends 'store/base.html' %}
+{% block title %}Gestion des sous-admins{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Gestion des sous-admins</h1>
+    <a href="{% url 'add_subadmin' %}" class="btn btn-primary">
+        <i class="fas fa-user-plus mr-2"></i> Ajouter un sous-admin
+    </a>
+</div>
+
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Tâches assignées</th>
+                    <th>Date d'ajout</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in subadmins %}
+                <tr>
+                    <td>{{ sub.username }}</td>
+                    <td>{{ sub.email }}</td>
+                    <td>
+                        {% for subtask in sub.subadmin_tasks.all %}
+                            <span class="badge badge-info">{{ subtask.task.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">Aucune tâche</span>
+                        {% endfor %}
+                    </td>
+                    <td>{{ sub.date_joined|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'edit_subadmin' sub.id %}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                        <a href="{% url 'delete_subadmin' sub.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Êtes-vous sûr ?')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Aucun sous-admin trouvé.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

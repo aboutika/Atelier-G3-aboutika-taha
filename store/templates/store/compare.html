@@ -1,0 +1,88 @@
+{% extends 'store/base.html' %}
+{% block title %}Comparer les mangas{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Comparaison de mangas</h1>
+    <a href="{% url 'user_manga_list' %}" class="btn btn-link"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
+</div>
+
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Caractéristique</th>
+                    {% for manga in mangas %}
+                    <th>{{ manga.title }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="font-weight-bold">Image</td>
+                    {% for manga in mangas %}
+                    <td>
+                        {% if manga.image %}
+                        <img src="{{ manga.image.url }}" alt="{{ manga.title }}" style="height: 150px;">
+                        {% elif manga.image_url %}
+                        <img src="{{ manga.image_url }}" alt="{{ manga.title }}" style="height: 150px;">
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                            <i class="fas fa-book fa-3x text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Auteur</td>
+                    {% for manga in mangas %}
+                    <td>{{ manga.author.name }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Éditeur</td>
+                    {% for manga in mangas %}
+                    <td>{{ manga.editor.name }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Catégorie</td>
+                    {% for manga in mangas %}
+                    <td>{{ manga.category.name }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Prix</td>
+                    {% for manga in mangas %}
+                    <td class="h4 text-primary">{{ manga.price }} €</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Stock</td>
+                    {% for manga in mangas %}
+                    <td>
+                        {% if manga.stock > 0 %}
+                        <span class="text-success">{{ manga.stock }} en stock</span>
+                        {% else %}
+                        <span class="text-danger">Rupture</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td></td>
+                    {% for manga in mangas %}
+                    <td>
+                        <a href="{% url 'order_manga' manga.id %}" class="btn btn-primary btn-sm {% if manga.stock <= 0 %}disabled{% endif %}">
+                            Commander
+                        </a>
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

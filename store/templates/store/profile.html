@@ -1,0 +1,22 @@
+{% extends 'store/base.html' %}
+{% load bootstrap4 %}
+{% block title %}Profil Bancaire{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h2 class="mb-4 text-center">Coordonnées Bancaires</h2>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-2"></i>
+                Vous devez renseigner ces informations pour pouvoir acheter ou louer des mangas.
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <button type="submit" class="btn btn-primary btn-block">Enregistrer les informations</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

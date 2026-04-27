@@ -1,0 +1,35 @@
+{% extends 'store/base.html' %}
+{% block title %}Mes Favoris{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Mes Favoris</h1>
+</div>
+
+<div class="row">
+    {% for fav in favorites %}
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            {% if fav.manga.image %}
+                <img src="{{ fav.manga.image.url }}" class="card-img-top" alt="{{ fav.manga.title }}" style="height: 200px; object-fit: cover;">
+            {% elif fav.manga.image_url %}
+                <img src="{{ fav.manga.image_url }}" class="card-img-top" alt="{{ fav.manga.title }}" style="height: 200px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ fav.manga.title }}</h5>
+                <p class="card-text text-primary font-weight-bold">{{ fav.manga.price }} €</p>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'order_manga' fav.manga.id %}" class="btn btn-primary btn-sm">Commander</a>
+                    <a href="{% url 'remove_from_favorites' fav.manga.id %}" class="btn btn-outline-danger btn-sm">Retirer</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <p class="text-muted">Vous n'avez pas encore de favoris.</p>
+        <a href="{% url 'user_manga_list' %}" class="btn btn-primary">Découvrir les mangas</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

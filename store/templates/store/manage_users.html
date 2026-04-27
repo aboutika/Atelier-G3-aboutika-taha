@@ -1,0 +1,62 @@
+{% extends 'store/base.html' %}
+{% block title %}Gestion des Utilisateurs{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Gestion des Utilisateurs</h1>
+</div>
+
+<div class="card p-4">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Date d'inscription</th>
+                    <th>Fautes (Location)</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user_obj in users %}
+                <tr {% if user_obj.is_suspended %}class="table-secondary"{% endif %}>
+                    <td><strong>{{ user_obj.username }}</strong></td>
+                    <td>{{ user_obj.email }}</td>
+                    <td>{{ user_obj.date_joined|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="badge badge-{% if user_obj.rental_strikes == 0 %}success{% elif user_obj.rental_strikes < 3 %}warning{% else %}danger{% endif %}">
+                            {{ user_obj.rental_strikes }}/3
+                        </span>
+                    </td>
+                    <td>
+                        {% if user_obj.is_suspended %}
+                            <span class="badge badge-danger">Suspendu</span>
+                        {% else %}
+                            <span class="badge badge-success">Actif</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{% url 'user_detail_admin' user_obj.id %}" class="btn btn-sm btn-primary" title="Voir profil complet">
+                                <i class="fas fa-user-circle"></i>
+                            </a>
+                            <a href="{% url 'view_user_visits' user_obj.id %}" class="btn btn-sm btn-info" title="Voir l'activité">
+                                <i class="fas fa-history"></i>
+                            </a>
+                            <a href="{% url 'toggle_user_suspension' user_obj.id %}" class="btn btn-sm btn-warning" title="{% if user_obj.is_suspended %}Réactiver{% else %}Suspendre{% endif %}">
+                                <i class="fas fa-{% if user_obj.is_suspended %}user-check{% else %}user-slash{% endif %}"></i>
+                            </a>
+                            <a href="{% url 'delete_user' user_obj.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer définitivement cet utilisateur ?')" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

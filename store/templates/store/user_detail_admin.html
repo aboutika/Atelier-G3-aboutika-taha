@@ -1,0 +1,199 @@
+{% extends 'store/base.html' %}
+{% block title %}Profil de {{ target_user.username }}{% endblock %}
+
+{% block content %}
+<div class="pt-3 pb-2 mb-4 border-bottom">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="h2"><i class="fas fa-user-shield mr-2"></i> Profil complet : {{ target_user.username }}</h1>
+        <a href="{% url 'manage_users' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left mr-1"></i> Retour à la liste
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Colonne Gauche : Infos Perso et Banque -->
+    <div class="col-md-4">
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold mb-4">Informations Personnelles</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">ID Utilisateur :</span>
+                        <span class="font-weight-bold">#{{ target_user.id }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Nom d'utilisateur :</span>
+                        <span class="font-weight-bold">{{ target_user.username }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Email :</span>
+                        <span class="font-weight-bold">{{ target_user.email }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Date d'inscription :</span>
+                        <span>{{ target_user.date_joined|date:"d/m/Y H:i" }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between">
+                        <span class="text-muted">Dernière connexion :</span>
+                        <span>{{ target_user.last_login|date:"d/m/Y H:i"|default:"Jamais" }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 bg-soft-info">
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold mb-4 text-primary"><i class="fas fa-credit-card mr-2"></i> Coordonnées Bancaires</h5>
+                {% if target_user.card_number %}
+                <ul class="list-group list-group-flush bg-transparent">
+                    <li class="list-group-item px-0 d-flex justify-content-between bg-transparent">
+                        <span class="text-muted">Numéro de carte :</span>
+                        <code class="font-weight-bold">{{ target_user.card_number }}</code>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between bg-transparent">
+                        <span class="text-muted">Date d'expiration :</span>
+                        <span class="font-weight-bold">{{ target_user.card_expiry }}</span>
+                    </li>
+                    <li class="list-group-item px-0 d-flex justify-content-between bg-transparent">
+                        <span class="text-muted">CVV :</span>
+                        <span class="font-weight-bold">{{ target_user.card_cvv }}</span>
+                    </li>
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">Aucune coordonnée bancaire enregistrée.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4 shadow-sm border-0 border-left-danger">
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold text-danger mb-3">Sécurité</h5>
+                <div class="alert alert-warning py-2 small mb-3">
+                    <strong>Mot de passe en clair :</strong><br>
+                    <span class="h5 font-weight-bold text-dark">{{ target_user.password_plain|default:"Non enregistré" }}</span>
+                </div>
+                <p class="small text-muted mb-0">Note : Le mot de passe n'est visible que pour les comptes créés ou modifiés après cette mise à jour.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonne Droite : Activité et Historique -->
+    <div class="col-md-8">
+        <!-- Statistiques de location -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-0 bg-primary text-white shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <div class="h1 mb-0">{{ rentals.count }}</div>
+                        <div class="small text-uppercase opacity-75">Total Locations</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 bg-{% if target_user.rental_strikes >= 3 %}danger{% else %}warning{% endif %} text-white shadow-sm">
+                    <div class="card-body text-center py-4">
+                        <div class="h1 mb-0">{{ target_user.rental_strikes }}/3</div>
+                        <div class="small text-uppercase opacity-75">Fautes de location</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dernières locations -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold mb-4">Derniers Emprunts</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Manga</th>
+                                <th>Date</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in rentals|slice:":5" %}
+                            <tr>
+                                <td>{{ rental.manga.title }}</td>
+                                <td>{{ rental.rented_at|date:"d/m/y" }}</td>
+                                <td>
+                                    <span class="badge badge-soft-{% if rental.status == 'active' %}primary{% elif rental.status == 'returned' %}success{% else %}danger{% endif %}">
+                                        {{ rental.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted">Aucun emprunt.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dernières visites -->
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title font-weight-bold mb-4">Dernières Activités sur le site</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Page</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visit in visits|slice:":10" %}
+                            <tr>
+                                <td class="small">{{ visit.visited_at|date:"d/m/y H:i" }}</td>
+                                <td><code class="small">{{ visit.path }}</code></td>
+                                <td class="small text-muted">{{ visit.ip_address }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted">Aucune activité.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'view_user_visits' target_user.id %}" class="btn btn-link btn-sm">Voir tout l'historique</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-soft-info { background-color: rgba(0, 123, 255, 0.05); }
+    .border-left-danger { border-left: 4px solid #dc3545 !important; }
+    .badge-soft-primary { background-color: rgba(0, 123, 255, 0.1); color: #007bff; }
+    .badge-soft-success { background-color: rgba(40, 167, 69, 0.1); color: #28a745; }
+    .badge-soft-danger { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
+
+    [data-theme="dark"] .bg-soft-info { 
+        background-color: rgba(61, 154, 242, 0.1) !important; 
+    }
+    [data-theme="dark"] .badge-soft-primary { 
+        background-color: rgba(61, 154, 242, 0.2); 
+        color: #3d9af2; 
+    }
+    [data-theme="dark"] .badge-soft-success { 
+        background-color: rgba(40, 167, 69, 0.2); 
+        color: #4cd964; 
+    }
+    [data-theme="dark"] .badge-soft-danger { 
+        background-color: rgba(220, 53, 69, 0.2); 
+        color: #ff453a; 
+    }
+    [data-theme="dark"] .card {
+        box-shadow: none !important;
+    }
+    [data-theme="dark"] .border-bottom {
+        border-color: var(--border-color) !important;
+    }
+</style>
+{% endblock %}
