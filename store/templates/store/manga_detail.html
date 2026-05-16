@@ -49,8 +49,8 @@
             </div>
             
             <div class="d-flex">
-                <a href="{% url 'order_manga' manga.id %}" class="btn btn-primary btn-lg mr-2 {% if manga.stock <= 0 %}disabled{% endif %}">
-                    <i class="fas fa-shopping-cart mr-2"></i> Acheter
+                <a href="{% url 'add_to_cart' manga.id %}" class="btn btn-primary btn-lg mr-2 {% if manga.stock <= 0 %}disabled{% endif %}">
+                    <i class="fas fa-cart-plus mr-2"></i> Ajouter au panier
                 </a>
                 <a href="{% url 'rent_manga' manga.id %}" class="btn btn-outline-info btn-lg mr-2 {% if manga.stock <= 0 or not user.can_rent %}disabled{% endif %}">
                     <i class="fas fa-clock mr-2"></i> Louer (Caution: {{ manga.rental_deposit }} €)

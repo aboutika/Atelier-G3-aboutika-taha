@@ -46,6 +46,14 @@ urlpatterns = [
     path('favorites/', views.favorites_list, name='favorites_list'),
     path('favorites/add/<int:manga_id>/', views.add_to_favorites, name='add_to_favorites'),
     path('favorites/remove/<int:manga_id>/', views.remove_from_favorites, name='remove_from_favorites'),
+    
+    # Cart views
+    path('cart/', views.view_cart, name='view_cart'),
+    path('cart/add/<int:manga_id>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/update/<int:manga_id>/<str:action>/', views.update_cart_quantity, name='update_cart_quantity'),
+    path('cart/remove/<int:manga_id>/', views.remove_from_cart, name='remove_from_cart'),
+    path('cart/checkout/', views.checkout_cart, name='checkout_cart'),
+    
     path('order/<int:manga_id>/', views.order_manga, name='order_manga'),
     path('compare/', views.compare_mangas, name='compare_mangas'),
 ]

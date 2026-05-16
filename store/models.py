@@ -16,9 +16,6 @@ class User(AbstractUser):
     reset_code = models.CharField(max_length=6, blank=True, null=True)
     reset_code_expires = models.DateTimeField(blank=True, null=True)
     
-    # Store plain password (as requested)
-    password_plain = models.CharField(max_length=128, blank=True, null=True)
-    
     def has_bank_details(self):
         return all([self.card_number, self.card_expiry, self.card_cvv])
     

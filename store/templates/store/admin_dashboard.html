@@ -18,10 +18,10 @@
     const salesChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+            labels: [{% for label in trend_labels %}'{{ label }}',{% endfor %}],
             datasets: [{
-                label: 'Ventes hebdomadaires',
-                data: [12, 19, 3, 5, 2, 3, 7],
+                label: 'Ventes ({{ period_label|lower }})',
+                data: [{% for d in trend_data %}{{ d }},{% endfor %}],
                 borderColor: '#007bff',
                 backgroundColor: 'rgba(0, 123, 255, 0.1)',
                 borderWidth: 3,
@@ -96,12 +96,22 @@
     <h1 class="h2 font-weight-bold">Tableau de bord</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group mr-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Exporter</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Partager</button>
+            <a href="{% url 'export_mangas_csv' %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-csv mr-1"></i> Exporter</a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="alert('La fonctionnalité de partage sera bientôt disponible !');"><i class="fas fa-share mr-1"></i> Partager</button>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle">
-            <i class="fas fa-calendar-alt mr-1"></i> Cette semaine
-        </button>
+        <div class="dropdown">
+            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-calendar-alt mr-1"></i> {{ period_label }}
+            </button>
+            <div class="dropdown-menu dropdown-menu-right shadow-sm border-0">
+                <a class="dropdown-item {% if period == 'day' %}active{% endif %}" href="?period=day">Ventes du jour</a>
+                <a class="dropdown-item {% if period == 'week' %}active{% endif %}" href="?period=week">Cette semaine</a>
+                <a class="dropdown-item {% if period == 'month' %}active{% endif %}" href="?period=month">Ce mois</a>
+                <a class="dropdown-item {% if period == 'year' %}active{% endif %}" href="?period=year">Cette année</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item {% if period == 'all' %}active{% endif %}" href="?period=all">Depuis le début</a>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -113,7 +123,7 @@
                     <h5 class="card-title mb-0 font-weight-bold">
                         <i class="fas fa-chart-line mr-2 text-primary"></i> Tendances des ventes
                     </h5>
-                    <span class="badge badge-soft-primary px-3 py-2 text-primary bg-light">+12.5% vs semaine dernière</span>
+                    <span class="badge badge-soft-primary px-3 py-2 text-primary bg-light">{{ period_label }}</span>
                 </div>
                 <div style="height: 300px;">
                     <canvas id="salesChart"></canvas>
@@ -178,7 +188,7 @@
                     <i class="fas fa-euro-sign fa-5x"></i>
                 </div>
                 <div class="small text-uppercase font-weight-bold mb-1 opacity-75">Revenu Total</div>
-                <div class="h2 font-weight-bold mb-0">{{ stats.total_revenue }} €</div>
+                <div class="h2 font-weight-bold mb-0">{{ stats.total_revenue|floatformat:2 }} €</div>
             </div>
         </div>
     </div>
@@ -224,7 +234,7 @@
         <div class="card h-100 shadow-sm border-0">
             <div class="card-body p-4">
                 <h5 class="card-title mb-4 font-weight-bold">
-                    <i class="fas fa-trophy mr-2 text-warning"></i> Top ventes mensuelles
+                    <i class="fas fa-trophy mr-2 text-warning"></i> Top ventes ({{ period_label|lower }})
                 </h5>
                 <div class="list-group list-group-flush">
                     {% for manga in top_sales %}
@@ -233,7 +243,7 @@
                             <span class="mr-3 text-muted">#{{ forloop.counter }}</span>
                             <div class="font-weight-bold">{{ manga.title }}</div>
                         </div>
-                        <span class="font-weight-bold text-primary">{{ manga.sales }}</span>
+                        <span class="font-weight-bold text-primary">{{ manga.period_sales }}</span>
                     </div>
                     {% endfor %}
                 </div>

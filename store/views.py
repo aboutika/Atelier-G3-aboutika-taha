@@ -17,9 +17,7 @@ def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
-            user = form.save(commit=False)
-            user.password_plain = request.POST.get('password1') # Store plain password from form
-            user.save()
+            user = form.save()
             login(request, user)
             return redirect('dashboard')
     else:
@@ -73,34 +71,107 @@ def admin_dashboard(request):
     if not (request.user.is_superuser or request.user.is_subadmin):
         return redirect('user_manga_list')
     
-    # Dates for monthly filtering
+    period = request.GET.get('period', 'week')
     now = timezone.now()
-    first_day_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
+    if period == 'day':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Aujourd'hui"
+    elif period == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Ce mois"
+    elif period == 'year':
+        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Cette année"
+    elif period == 'all':
+        start_date = None
+        period_label = "Depuis le début"
+    else: # Default to week
+        start_date = now - timedelta(days=now.weekday())
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_label = "Cette semaine"
+
+    # Base querysets
+    orders_qs = Order.objects.all()
+    rentals_qs = Rental.objects.all()
+    
+    if start_date:
+        orders_qs = orders_qs.filter(ordered_at__gte=start_date)
+        rentals_qs = rentals_qs.filter(rented_at__gte=start_date)
+
     # Stats for the dashboard
     stats = {
         'total_mangas': Manga.objects.count(),
-        'total_orders': Order.objects.count(),
-        'mangas_sold': Order.objects.filter(status='delivered').aggregate(Sum('quantity'))['quantity__sum'] or 0,
-        'total_revenue': Order.objects.filter(status='delivered').aggregate(total=Sum(models.F('manga__price') * models.F('quantity')))['total'] or 0,
+        'total_orders': orders_qs.count(),
+        'mangas_sold': orders_qs.filter(status='delivered').aggregate(Sum('quantity'))['quantity__sum'] or 0,
+        'total_revenue': orders_qs.filter(status='delivered').aggregate(total=Sum(models.F('manga__price') * models.F('quantity')))['total'] or 0,
         'avg_price': Manga.objects.aggregate(Avg('price'))['price__avg'] or 0,
-        'avg_order': Order.objects.aggregate(avg=Avg(models.F('manga__price') * models.F('quantity')))['avg'] or 0,
+        'avg_order': orders_qs.aggregate(avg=Avg(models.F('manga__price') * models.F('quantity')))['avg'] or 0,
         'active_users': User.objects.filter(is_active=True, is_superuser=False).count(),
         'low_stock': Manga.objects.filter(stock__lt=5).count(),
-        'active_rentals': Rental.objects.filter(status='active').count(),
-        'monthly_sales': Order.objects.filter(ordered_at__gte=first_day_month, status='delivered').aggregate(Sum('quantity'))['quantity__sum'] or 0,
+        'active_rentals': rentals_qs.filter(status='active').count(),
     }
     
     top_mangas = Manga.objects.order_by('-consultations')[:10]
-    top_sales = Manga.objects.order_by('-sales')[:5]
     
-    # Sales by category for a chart
+    # Top sales based on filtered orders
+    top_sales_ids = orders_qs.filter(status='delivered').values('manga').annotate(total_sales=Sum('quantity')).order_by('-total_sales')[:5]
+    top_sales = []
+    for item in top_sales_ids:
+        manga = Manga.objects.get(id=item['manga'])
+        manga.period_sales = item['total_sales']
+        top_sales.append(manga)
+    
+    # Sales by category for a chart (filtered)
     category_sales = Category.objects.annotate(
-        total_sales=Sum('manga__sales')
+        total_sales=Sum('manga__order__quantity', filter=models.Q(manga__order__status='delivered', manga__order__ordered_at__gte=start_date) if start_date else models.Q(manga__order__status='delivered'))
     ).filter(total_sales__gt=0).order_by('-total_sales')
     
+    # Trends Data for Chart.js
+    trend_labels = []
+    trend_data = []
+    
+    if period == 'day':
+        # Last 24 hours
+        for i in range(23, -1, -1):
+            hour_time = now - timedelta(hours=i)
+            label = hour_time.strftime("%H:00")
+            count = orders_qs.filter(ordered_at__hour=hour_time.hour, ordered_at__day=hour_time.day).count()
+            trend_labels.append(label)
+            trend_data.append(count)
+    elif period == 'month':
+        # Days of current month
+        last_day = (now.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        for day in range(1, last_day.day + 1):
+            trend_labels.append(str(day))
+            count = orders_qs.filter(ordered_at__day=day).count()
+            trend_data.append(count)
+    elif period == 'year':
+        # 12 Months
+        month_names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+        for i in range(1, 13):
+            trend_labels.append(month_names[i-1])
+            count = orders_qs.filter(ordered_at__month=i).count()
+            trend_data.append(count)
+    elif period == 'all':
+        # Last 5 years
+        current_year = now.year
+        for year in range(current_year - 4, current_year + 1):
+            trend_labels.append(str(year))
+            count = orders_qs.filter(ordered_at__year=year).count()
+            trend_data.append(count)
+    else: # week
+        # Last 7 days
+        days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+        start_of_week = now - timedelta(days=now.weekday())
+        for i in range(7):
+            current_day = start_of_week + timedelta(days=i)
+            trend_labels.append(days[i])
+            count = orders_qs.filter(ordered_at__day=current_day.day, ordered_at__month=current_day.month).count()
+            trend_data.append(count)
+
     # Active rentals list
-    active_rentals_list = Rental.objects.filter(status='active').order_by('due_date')[:5]
+    active_rentals_list = rentals_qs.filter(status='active').order_by('due_date')[:5]
     
     return render(request, 'store/admin_dashboard.html', {
         'stats': stats,
@@ -108,6 +179,11 @@ def admin_dashboard(request):
         'top_sales': top_sales,
         'category_sales': category_sales,
         'active_rentals_list': active_rentals_list,
+        'period': period,
+        'period_label': period_label,
+        'now': now,
+        'trend_labels': trend_labels,
+        'trend_data': trend_data,
     })
 
 @login_required
@@ -146,11 +222,17 @@ def user_manga_list(request):
     # Sort to maintain the order from session
     recently_viewed = sorted(recently_viewed, key=lambda m: recently_viewed_ids.index(m.id))
 
+    # Recommendations (Popular or Random)
+    recommendations = Manga.objects.filter(is_popular=True).exclude(id__in=recently_viewed_ids).order_by('?')[:15]
+    if not recommendations:
+        recommendations = Manga.objects.exclude(id__in=recently_viewed_ids).order_by('?')[:15]
+
     return render(request, 'store/user_manga_list.html', {
         'mangas': mangas,
         'categories': categories,
         'search': search,
         'recently_viewed': recently_viewed,
+        'recommendations': recommendations,
     })
 
 # Admin Manga Management
@@ -204,10 +286,11 @@ def export_mangas_csv(request):
     if not (request.user.is_superuser or request.user.is_subadmin):
         return redirect('user_manga_list')
     
-    response = HttpResponse(content_type='text/csv')
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = 'attachment; filename="mangas_export.csv"'
+    response.write('\ufeff') # BOM for Excel
     
-    writer = csv.writer(response)
+    writer = csv.writer(response, delimiter=';')
     writer.writerow(['ID', 'Titre', 'Auteur', 'Éditeur', 'Catégorie', 'Prix', 'Stock', 'Ventes'])
     
     mangas = Manga.objects.all().values_list('id', 'title', 'author__name', 'editor__name', 'category__name', 'price', 'stock', 'sales')
@@ -250,6 +333,10 @@ def rent_manga(request, manga_id):
     
     if not request.user.can_rent():
         messages.error(request, "Vous ne pouvez plus louer de mangas en raison de fautes ou d'une suspension.")
+        return redirect('user_manga_list')
+    
+    if Rental.objects.filter(user=request.user, manga=manga, status='active').exists():
+        messages.warning(request, "Vous avez déjà une location en cours pour ce manga.")
         return redirect('user_manga_list')
     
     if manga.stock > 0:
@@ -367,21 +454,117 @@ def favorites_list(request):
     return render(request, 'store/favorites.html', {'favorites': favorites})
 
 @login_required
-def order_manga(request, manga_id):
+def add_to_cart(request, manga_id):
     manga = get_object_or_404(Manga, id=manga_id)
-    if not request.user.has_bank_details():
-        messages.warning(request, "Veuillez renseigner vos coordonnées bancaires avant d'acheter.")
-        return redirect('profile')
-        
-    if manga.stock > 0:
-        Order.objects.create(user=request.user, manga=manga, quantity=1, status='delivered')
-        manga.stock -= 1
-        manga.sales += 1
-        manga.save()
-        messages.success(request, f"Achat de {manga.title} réussi.")
+    if manga.stock <= 0:
+        messages.error(request, f"Désolé, {manga.title} est en rupture de stock.")
+        return redirect('user_manga_list')
+    
+    cart = request.session.get('cart', {})
+    manga_id_str = str(manga_id)
+    
+    if manga_id_str in cart:
+        if cart[manga_id_str] < manga.stock:
+            cart[manga_id_str] += 1
+            messages.success(request, f"Une autre unité de {manga.title} a été ajoutée au panier.")
+        else:
+            messages.warning(request, f"Stock maximum atteint pour {manga.title}.")
     else:
-        messages.error(request, "Stock insuffisant.")
+        cart[manga_id_str] = 1
+        messages.success(request, f"{manga.title} ajouté au panier.")
+    
+    request.session['cart'] = cart
     return redirect('user_manga_list')
+
+@login_required
+def view_cart(request):
+    cart = request.session.get('cart', {})
+    cart_items = []
+    total_price = 0
+    
+    for manga_id, quantity in cart.items():
+        manga = get_object_or_404(Manga, id=manga_id)
+        subtotal = manga.price * quantity
+        total_price += subtotal
+        cart_items.append({
+            'manga': manga,
+            'quantity': quantity,
+            'subtotal': subtotal
+        })
+    
+    return render(request, 'store/cart.html', {
+        'cart_items': cart_items,
+        'total_price': total_price
+    })
+
+@login_required
+def update_cart_quantity(request, manga_id, action):
+    cart = request.session.get('cart', {})
+    manga_id_str = str(manga_id)
+    manga = get_object_or_404(Manga, id=manga_id)
+    
+    if manga_id_str in cart:
+        if action == 'increment':
+            if cart[manga_id_str] < manga.stock:
+                cart[manga_id_str] += 1
+            else:
+                messages.warning(request, f"Stock maximum atteint pour {manga.title}.")
+        elif action == 'decrement':
+            if cart[manga_id_str] > 1:
+                cart[manga_id_str] -= 1
+            else:
+                del cart[manga_id_str]
+                messages.success(request, f"{manga.title} retiré du panier.")
+                
+        request.session['cart'] = cart
+    return redirect('view_cart')
+
+@login_required
+def remove_from_cart(request, manga_id):
+    cart = request.session.get('cart', {})
+    manga_id_str = str(manga_id)
+    if manga_id_str in cart:
+        del cart[manga_id_str]
+        request.session['cart'] = cart
+        messages.success(request, "Article retiré du panier.")
+    return redirect('view_cart')
+
+@login_required
+def checkout_cart(request):
+    if not request.user.has_bank_details():
+        messages.warning(request, "Veuillez renseigner vos coordonnées bancaires avant de valider votre panier.")
+        return redirect('profile')
+    
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, "Votre panier est vide.")
+        return redirect('user_manga_list')
+    
+    processed_mangas = []
+    for manga_id, quantity in cart.items():
+        manga = get_object_or_404(Manga, id=manga_id)
+        if manga.stock < quantity:
+            messages.error(request, f"Stock insuffisant pour {manga.title}. Veuillez ajuster votre panier.")
+            return redirect('view_cart')
+        processed_mangas.append((manga, quantity))
+    
+    # All stocks are fine, proceed to create orders
+    for manga, quantity in processed_mangas:
+        Order.objects.create(user=request.user, manga=manga, quantity=quantity, status='delivered')
+        manga.stock -= quantity
+        manga.sales += quantity
+        manga.save()
+    
+    # Clear cart
+    request.session['cart'] = {}
+    messages.success(request, "Merci pour votre achat ! Votre commande a été validée.")
+    return redirect('user_manga_list')
+
+@login_required
+def order_manga(request, manga_id):
+    # This function is now superseded by the cart system for general users, 
+    # but we can keep it as a 'Quick Buy' if needed, or redirect to add_to_cart.
+    return add_to_cart(request, manga_id)
 
 @login_required
 def compare_mangas(request):
@@ -459,7 +642,6 @@ def password_reset_verify(request):
             user = User.objects.get(email=email, reset_code=code)
             if user.reset_code_expires > timezone.now():
                 user.set_password(new_password)
-                user.password_plain = new_password # Update plain password
                 user.reset_code = None
                 user.reset_code_expires = None
                 user.save()

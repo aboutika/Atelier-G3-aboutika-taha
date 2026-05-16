@@ -34,10 +34,17 @@ class MangaForm(forms.ModelForm):
     author_name = forms.CharField(label="Auteur", max_length=100)
     editor_name = forms.CharField(label="Éditeur", max_length=100)
     category_name = forms.CharField(label="Catégorie", max_length=100)
+    
+    field_order = ['title', 'author_name', 'editor_name', 'category_name', 'price', 'rental_deposit', 'stock', 'image', 'description', 'is_popular']
 
     class Meta:
         model = Manga
-        exclude = ['image_url', 'author', 'editor', 'category']
+        exclude = ['image_url', 'author', 'editor', 'category', 'consultations', 'sales']
+        widgets = {
+            'price': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
+            'rental_deposit': forms.NumberInput(attrs={'min': '0', 'step': '0.01'}),
+            'stock': forms.NumberInput(attrs={'min': '0'}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,6 +55,9 @@ class MangaForm(forms.ModelForm):
                 self.fields['editor_name'].initial = self.instance.editor.name
             if getattr(self.instance, 'category', None):
                 self.fields['category_name'].initial = self.instance.category.name
+        else:
+            # Pour les nouveaux mangas, on vide la valeur par défaut pour forcer la saisie manuelle
+            self.initial['rental_deposit'] = None
 
     def save(self, commit=True):
         manga = super().save(commit=False)

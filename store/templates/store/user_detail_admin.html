@@ -65,17 +65,6 @@
                 {% endif %}
             </div>
         </div>
-        
-        <div class="card mt-4 shadow-sm border-0 border-left-danger">
-            <div class="card-body">
-                <h5 class="card-title font-weight-bold text-danger mb-3">Sécurité</h5>
-                <div class="alert alert-warning py-2 small mb-3">
-                    <strong>Mot de passe en clair :</strong><br>
-                    <span class="h5 font-weight-bold text-dark">{{ target_user.password_plain|default:"Non enregistré" }}</span>
-                </div>
-                <p class="small text-muted mb-0">Note : Le mot de passe n'est visible que pour les comptes créés ou modifiés après cette mise à jour.</p>
-            </div>
-        </div>
     </div>
 
     <!-- Colonne Droite : Activité et Historique -->
